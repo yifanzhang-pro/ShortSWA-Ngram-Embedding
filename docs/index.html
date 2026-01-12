@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShortSWA: The Next-Generation N-gram Embedding</title>
+
+  <meta name="description" content="Short Sliding Window Attention (ShortSWA) is a dynamic, parameter-efficient realization of the Over-Encoding framework, replacing massive static n-gram tables.">
+  <meta name="keywords" content="ShortSWA, N-gram, Over-Encoding, Embedding, Transformers, Deep Learning, ICML 2025, Sliding Window Attention">
+  <meta name="author" content="Yifan Zhang">
+  <meta name="citation_title" content="ShortSWA-Ngram-Embedding">
+  <meta name="citation_author" content="Yifan Zhang">
+  <meta name="citation_publication_date" content="2026/01/12">
+  <meta property="og:title" content="ShortSWA: The Next-Generation N-gram Embedding"/>
+  <meta property="og:description" content="Why Short Sliding Window Attention Is the dynamic realization of the Over-Encoding framework."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://github.com/yifanzhang-pro/ShortSWA-Ngram-Embedding"/>
+  <link rel="canonical" href="https://github.com/yifanzhang-pro/ShortSWA-Ngram-Embedding">
+  
+  <link rel="icon" href="https://placehold.co/32x32/0A2540/FFFFFF?text=S" type="image/x-icon">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    :root{
+      --primary-color:#0A2540;    /* Deep Navy */
+      --accent-color:#00C2FF;     /* Cyan Accent */
+      --main-bg:#FFFFFF;
+      --content-bg:#F6F8FA;
+      --text-main:#2D2D2D;
+      --text-on-primary:#FFFFFF;
+      --link-color:var(--primary-color);
+      --link-hover-color:#143E73;
+      --primary-color-rgb:10,37,64;
+      --link-color-rgb:10,37,64;
+      --border-color:#e5e7eb;
+      --shadow-color:rgba(0,0,0,0.1);
+    }
+
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text-main); background:var(--main-bg);
+      display:flex; flex-direction:column; min-height:100vh;
+      text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Navbar */
+    .navbar{
+      background:rgba(var(--primary-color-rgb),0.92);
+      backdrop-filter:blur(10px);
+      box-shadow:0 2px 5px var(--shadow-color);
+      position:sticky; top:0; z-index:100;
+    }
+    .navbar .navbar-item, .navbar .navbar-link{ color:var(--text-on-primary); font-weight:500; }
+    .navbar a.navbar-item:hover, .navbar .navbar-link:hover, .navbar-item.is-active{ color:var(--accent-color)!important; background:transparent!important; }
+    .navbar-burger{ color:var(--text-on-primary); }
+
+    /* Hero */
+    .hero{ background:linear-gradient(180deg, #0A2540 0%, #0e3055 100%); color:var(--text-on-primary); }
+    .hero .title{
+      font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--text-on-primary);
+      font-size:3.0rem; line-height:1.1;
+    }
+    .hero .subtitle.is-hero-subtitle{
+      color:rgba(255,255,255,0.92); font-size:1.18rem; max-width:980px; margin:1.25rem auto 2rem auto;
+    }
+    .hero .subtitle .highlight{ color:var(--accent-color); font-weight:600; }
+
+    .project-links a{ color:var(--text-on-primary); font-size:1.45rem; margin:0 0.6rem; transition:transform .25s ease, color .25s ease; }
+    .project-links a:hover{ color:var(--accent-color); transform:translateY(-2px); }
+
+    /* Authors */
+    .authors-list { font-size: 1.25rem; line-height: 1.6; margin-top: 1rem; color: rgba(255,255,255,0.95); font-weight: 500; }
+    .date-display { font-size: 0.95rem; color: rgba(255,255,255,0.7); margin-top: 0.5rem; font-style: italic;}
+
+    /* Sections */
+    .section.content-section{ padding:4.5rem 1.25rem; border-bottom:1px solid var(--border-color); }
+    .section.content-section:nth-child(even){ background:var(--content-bg); }
+    .section-title{
+      font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--primary-color);
+      margin-bottom:2.2rem;
+    }
+    .content{ max-width:1000px; margin:0 auto; line-height:1.8; font-size:1.06rem; }
+    .content a{ color:var(--link-color); font-weight:500; text-decoration:none; border-bottom:2px solid rgba(var(--link-color-rgb),.2); }
+    .content a:hover{ color:var(--link-hover-color); border-bottom-color:var(--link-hover-color); }
+    .content img{ display:block; margin:1.75rem auto; max-width:100%; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.08); }
+
+    /* Code & Pre */
+    .content pre{
+      background:#0f172a; color:#cbd5e1; border-radius:8px; padding:1.1em 1.2em;
+      overflow:auto; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);
+      font-size:0.95rem;
+    }
+    code{ background:#f2f4f7; color:#1f2937; padding:0.18em 0.38em; border-radius:4px; font-size:85%; }
+    pre code{ background:transparent; color:inherit; padding:0; font-size:inherit; }
+
+    /* Custom Boxes for "Pillars" */
+    .pillar-box {
+        background: #fff; border: 1px solid var(--border-color); border-radius: 8px;
+        padding: 1.5rem; height: 100%; transition: transform 0.2s;
+    }
+    .pillar-box:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+    /* Badges */
+    .pill{ display:inline-block; padding:.35rem .6rem; border-radius:999px; font-size:.82rem; background:#E6F7FF; color:#0A2540; margin:.15rem .25rem; border:1px solid #C8ECFF; }
+
+    /* Footer */
+    .footer{
+      background:var(--primary-color); color:var(--text-on-primary);
+      padding:2rem 1.5rem; border-top:3px solid var(--accent-color); margin-top:auto;
+    }
+    .footer a{ color:var(--accent-color); font-weight:500; }
+    .footer a:hover{ color:#ffffff; }
+
+    /* Utility */
+    .mini-caption{ display:block; margin-top:.35rem; color:#6b7280; font-style:italic; text-align:center;}
+     
+    /* SVG Styling */
+    .diagram-container {
+        width: 100%;
+        margin: 2rem 0;
+        text-align: center;
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    svg text { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item is-size-5 has-text-weight-bold" href="#">ShortSWA</a>
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+      <div id="navbarMenu" class="navbar-menu">
+        <div class="navbar-end">
+          <a href="#intro" class="navbar-item">Overview</a>
+          <a href="#over-encoding" class="navbar-item">Over-Encoding</a>
+          <a href="#mechanism" class="navbar-item">Mechanism</a>
+          <a href="#comparison" class="navbar-item">Comparison</a>
+          <a href="#citation" class="navbar-item">Citation</a>
+          <a href="https://yifzhang.com/blog" class="navbar-item">Yifan's Blog</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero is-medium">
+    <div class="hero-body">
+      <div class="container has-text-centered">
+        <h1 class="title">ShortSWA Is the Next-Generation N-gram Embedding</h1>
+        <h2 class="subtitle is-hero-subtitle">
+          Short Sliding Window Attention (ShortSWA) is a dynamic, parameter-efficient realization of the <span class="highlight">"Over-Encoding"</span> framework.
+        </h2>
+        
+        <div class="authors-list">
+           Yifan Zhang
+        </div>
+        <div class="date-display">
+           January 12, 2026
+        </div>
+
+        <div class="project-links" style="margin-top:1.5rem;">
+          <a href="https://github.com/yifanzhang-pro/ShortSWA-Ngram-Embedding" target="_blank" rel="noopener" aria-label="GitHub Repository"><i class="fab fa-github"></i></a>
+          <a href="#citation" aria-label="Citation"><i class="fas fa-quote-right"></i></a>
+        </div>
+        <div style="margin-top:1.25rem;">
+          <span class="pill">N-gram Scaling</span>
+          <span class="pill">Over-Encoding</span>
+          <span class="pill">Dynamic Embeddings</span>
+          <span class="pill">Efficiency</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="intro" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">The Convergence</h2>
+        <div class="content has-text-justified" style="max-width:880px;">
+          <p>
+            Work on fast sequence models has historically split into two distinct tracks. On one hand, we have the hardware-centric push towards optimizing local mixing primitives, as argued in our previous analysis, <a href="https://yifanzhang-pro.github.io/Rethinking-SWA">Rethinking SWA</a> [1]. On the other, recent empirical studies, such as the <strong>Over-Encoding</strong> framework by Huang et al. (ICML 2025) [2], have demonstrated that massive n-gram vocabularies yield significant performance gains.
+          </p>
+          <div class="notification is-light is-info" style="border-left: 4px solid var(--primary-color);">
+            <strong>The Thesis:</strong> We argue that these two threads are converging. <strong>Short Sliding Window Attention (ShortSWA)</strong> is effectively a dynamic, parameter-efficient realization of the "Over-Encoding" framework. By shifting from static vocabulary lookups to dynamic, window-bounded attention, ShortSWA captures the benefits of n-gram scaling laws without the prohibitive memory footprint of expanding embedding tables.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <section id="over-encoding" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">The Signal in N-grams</h2>
+        <div class="content">
+          <p>
+            The <em>Over-Tokenized Transformers</em> result [2] points to a simple claim: input representation density matters. Huang et al. report a near log-linear link between input vocab size and training loss. By scaling the input side to multi-gram tokens (e.g., treating “New York City” as one token), a 400M parameter model can reach the perplexity of a 1B parameter baseline.
+          </p>
+          
+          <p>
+             This result backs a fundamental framework: <strong>Local token composition carries a high-value signal.</strong> Language comes in clumps; neighbor tokens often form a single semantic unit with lower entropy than its parts. Static n-gram embeddings exploit this by storing vectors for frequent clumps. However, this approach hits practical limits.
+          </p>
+
+          <div class="columns is-multiline" style="margin-top: 2rem;">
+            <div class="column is-6">
+                <div class="pillar-box">
+                    <h4 class="title is-5 has-text-weight-bold" style="color:var(--primary-color);">Limit 1: Sparsity & Memory</h4>
+                    <p>An input table with 12 million entries can consume gigabytes of VRAM. Because language follows a Zipfian distribution, the vast majority of these entries sit idle in memory, rarely accessed but constantly costing resources.</p>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="pillar-box">
+                    <h4 class="title is-5 has-text-weight-bold" style="color:var(--primary-color);">Limit 2: Context Rigidity</h4>
+                    <p>A fixed token for “apple” cannot distinguish “Apple” the company from “apple” the fruit without discrete entries for every permutation. The table needs exponential entries to cover nuance, yet still fails on novel compositions.</p>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mechanism" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">ShortSWA as an Adaptive N-gram Builder</h2>
+        <div class="content">
+           <p>
+             ShortSWA [1] offers a different path. While originally derived from hardware chunking (replacing fixed short convolutions with attention over a short window, e.g., $w=128$), under the Over-Encoding lens, this move carries a semantic role.
+           </p>
+           
+           <div class="diagram-container">
+            <svg viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg">
+               <style>
+                 .token-box { fill: #fff; stroke: #0A2540; stroke-width: 1.5; rx: 4; }
+                 .text-token { font-size: 14px; text-anchor: middle; font-weight: 500; fill: #2D2D2D; }
+                 .atten-curve { fill: none; stroke: #00C2FF; stroke-width: 2; marker-end: url(#arrow-blue); opacity: 0.8; }
+                 .static-brace { fill: none; stroke: #FF3860; stroke-width: 2; }
+                 .label-static { font-size: 12px; fill: #FF3860; font-weight: 700; text-anchor: middle; }
+                 .label-dynamic { font-size: 12px; fill: #00C2FF; font-weight: 700; text-anchor: middle; }
+               </style>
+               <defs>
+                <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3.5" orient="auto">
+                   <polygon points="0 0, 10 3.5, 0 7" fill="#00C2FF" opacity="0.7"/>
+                 </marker>
+               </defs>
+
+              <text x="50" y="40" font-weight="bold" fill="#666">Sequence:</text>
+              <g transform="translate(50, 60)">
+                  <rect x="0" y="0" width="80" height="40" class="token-box"/> <text x="40" y="25" class="text-token">The</text>
+                  <rect x="100" y="0" width="80" height="40" class="token-box"/> <text x="140" y="25" class="text-token">quick</text>
+                  <rect x="200" y="0" width="80" height="40" class="token-box"/> <text x="240" y="25" class="text-token">brown</text>
+                  <rect x="300" y="0" width="80" height="40" class="token-box" style="stroke:#00C2FF; stroke-width:2.5;"/> <text x="340" y="25" class="text-token">fox</text>
+               </g>
+
+              <path d="M 52 55 L 52 25 L 428 25 L 428 55" class="static-brace" />
+              <text x="240" y="20" class="label-static">Over-Encoding: Single Fixed Vector Index #4921</text>
+
+              <text x="50" y="170" font-weight="bold" fill="#666">ShortSWA ($h_t'$):</text>
+              <text x="240" y="235" class="label-dynamic">Dynamic Attention Composition</text>
+               
+              <path d="M 390 102 C 390 150, 90 150, 90 108" class="atten-curve" />
+              <path d="M 390 102 C 390 140, 190 140, 190 108" class="atten-curve" />
+              <path d="M 390 102 C 390 130, 290 130, 290 108" class="atten-curve" />
+               
+              <text x="460" y="80" font-size="13" fill="#444" style="font-style:italic;">
+                 "fox" pulls signal from
+                <tspan x="460" dy="1.3em">"The", "quick", "brown"</tspan>
+                <tspan x="460" dy="1.3em">based on context.</tspan>
+               </text>
+             </svg>
+             <span class="mini-caption">Figure 1: Static Lookup vs. Dynamic Construction. ShortSWA builds the n-gram representation on the fly.</span>
+           </div>
+
+           <p>
+             A ShortSWA layer that attends within 128 tokens builds n-gram-like features dynamically. It does not look up a stored vector for “the quick brown fox”. It lets “fox” pull signal from “the”, “quick”, and “brown” using attention weights. The weights change with context, not with token frequency counts. We can write a rough equivalence:
+           </p>
+
+           <div style="background:var(--content-bg); padding:1.5rem; border-radius:8px; border:1px solid var(--border-color); text-align:center; margin: 2rem 0;">
+             $$
+             h_t' = \text{Attention}(h_t, h_{t-w:t}) \approx \text{Embedding}_{\text{ngram}}(x_{t-w:t})
+             $$
+           </div>
+
+           <p>
+             The left side builds a soft n-gram representation. It can represent many multi-grams up to length $w$, and it can shift with the sentence. The right side stands for a fixed table entry tied to one discrete n-gram.
+           </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="comparison" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">The Trade-off</h2>
+        <div class="content">
+          <p>
+            This architectural shift has two concrete effects on model design and efficiency.
+          </p>
+
+          <div class="columns is-centered">
+            <div class="column is-5">
+              <div class="box" style="border-top: 4px solid #FF3860;">
+                 <h4 class="title is-5">Parameter Cost</h4>
+                 <p><strong>Over-Encoding:</strong> Adds embeddings that grow with $|\mathcal{V}|$. Parameter count rises significantly with vocabulary size, often consuming VRAM that could be used for depth.</p>
+                 <hr>
+                 <p><strong>ShortSWA:</strong> Mainly adds the projection matrices $W_Q, W_K, W_V$. The cost is fixed regardless of effective "vocabulary" complexity.</p>
+              </div>
+            </div>
+            <div class="column is-5">
+              <div class="box" style="border-top: 4px solid #00C2FF;">
+                 <h4 class="title is-5">Hardware Fit</h4>
+                 <p><strong>Over-Encoding:</strong> Large lookups result in sparse memory access patterns.</p>
+                 <hr>
+                 <p><strong>ShortSWA:</strong> As noted in [1], attention over a chunk (e.g., 128 tokens) matches common memory movement. The data is already in fast memory (SRAM), so local attention becomes a dense “pre-encode” of the chunk before the global block.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="conclusion" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">Conclusion</h2>
+        <div class="content has-text-centered" style="max-width:800px; margin:0 auto;">
+          <p>
+            The claim “Vocabulary is worth scaling” [2] matches a plain idea: Local context matters, and dense local signals help later global mixing. Scaling a static vocabulary is a blunt tool.
+          </p>
+          <p>
+            <strong>ShortSWA gives a cleaner mechanism.</strong> It forms soft n-grams up to window length $w$, and it adapts them to the actual context, so it captures the same signal without a huge table. While the window size $w$ remains a hyperparameter to tune, the structural advantage of dynamic composition over static lookup is clear.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="citation" class="section content-section">
+      <div class="container">
+        <h2 class="title is-3 has-text-centered section-title">References & Citation</h2>
+        <div class="content">
+          <ol class="mb-6">
+            <li><a href="https://yifanzhang-pro.github.io/Rethinking-SWA">Rethinking SWA</a>, Yifan Zhang, December 16, 2025.</li>
+            <li><a href="https://arxiv.org/abs/2501.16975">Over-Encoding</a>, Hongzhi Huang et al., ICML 2025.</li>
+          </ol>
+
+<pre id="cite-bibtex"><code>@article{zhang2026shortswa,
+  title = {ShortSWA Is the Next-Generation N-gram Embedding},
+  author = {Zhang, Yifan},
+  journal = {yifanzhang-pro.github.io},
+  year = {2026},
+  month = {January},
+  url = "https://github.com/yifanzhang-pro/ShortSWA-Ngram-Embedding"
+}</code></pre>
+          <p>
+            <button id="copy-cite" class="button is-small is-link is-light">
+              <span class="icon"><i class="fas fa-clipboard"></i></span>
+              <span>Copy BibTeX</span>
+            </button>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <p>
+          <a href="#intro">Overview</a> &nbsp;&bull;&nbsp;
+          <a href="#mechanism">Mechanism</a> &nbsp;&bull;&nbsp;
+          <a href="#comparison">Comparison</a> &nbsp;&bull;&nbsp;
+          <a href="#citation">Citation</a> &nbsp;&bull;&nbsp;
+          <a href="https://yifzhang.com/blog">Yifan's Blog</a>
+        </p>
+        <p>&copy; 2026 Yifan Zhang. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile navbar toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const $burgers = Array.from(document.querySelectorAll('.navbar-burger'));
+      $burgers.forEach(el => {
+        el.addEventListener('click', () => {
+          const target = el.dataset.target;
+          const $target = document.getElementById(target);
+          el.classList.toggle('is-active');
+          $target.classList.toggle('is-active');
+        });
+      });
+
+      // Hex -> rgb helper
+      function hexToRgb(hex){
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return m ? { r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16) } : null;
+      }
+      const root = document.documentElement;
+      const styles = getComputedStyle(root);
+      const p = styles.getPropertyValue('--primary-color').trim();
+      const l = styles.getPropertyValue('--link-color').trim();
+      const prgb = hexToRgb(p), lrgb = hexToRgb(l);
+      if(prgb){ root.style.setProperty('--primary-color-rgb', `${prgb.r}, ${prgb.g}, ${prgb.b}`); }
+      if(lrgb){ root.style.setProperty('--link-color-rgb', `${lrgb.r}, ${lrgb.g}, ${lrgb.b}`); }
+
+      // Copy BibTeX
+      const btn = document.getElementById('copy-cite');
+      const pre = document.getElementById('cite-bibtex');
+      if(btn && pre){
+        btn.addEventListener('click', async () => {
+          const text = pre.innerText;
+          try{
+            await navigator.clipboard.writeText(text);
+            btn.classList.add('is-success');
+            btn.classList.remove('is-link','is-light');
+            btn.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copied</span>';
+            setTimeout(() => {
+              btn.classList.remove('is-success');
+              btn.classList.add('is-link','is-light');
+              btn.innerHTML = '<span class="icon"><i class="fas fa-clipboard"></i></span><span>Copy BibTeX</span>';
+            }, 1600);
+          }catch(e){
+            const range = document.createRange();
+            range.selectNode(pre);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try{ document.execCommand('copy'); }catch(_){}
+            sel.removeAllRanges();
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
